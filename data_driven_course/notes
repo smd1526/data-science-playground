@@ -1,0 +1,33 @@
+The median can be a more robust measure of the average trend of datasets than the mean, as the latter is easily skewed by outliers.
+
+Calculating the median requires all the data to be in memory at once. This is not an issue for calculating the mean.
+It is impossible to do an exact "running" median, but it is possible to approximate.
+
+Binapprox algorithm:
+List of n numbers between x and y.
+Create a histogram by placing each number in a bin x...y.
+Starting from the first bin, if we sum the counts in the bins until we get just over n+1/2, then the last bin added (to the sum) must contained the median.
+Choose the midpoint of that bin.
+
+Pseudocode:
+
+μ = mean
+σ = standard deviation
+
+minval = μ - σ
+maxval = μ + σ
+// any value >= maxval is ignored
+
+width = 2σ/B
+ignore_bin // value < minval
+// Make B bins for counting values in minval and maxval
+// 		first bin is minval <= value < minval + width
+
+// Count the number of values in each bin
+
+// Sum until total >= (N + 1)/2 (starting with ignore bin)
+// Return the midpoint of the bin that exceeded (N + 1)/2
+
+
+Downside to binapprox:
+Answer is only accurate to σ/B. Must keep B large enough that this isn't a problem.

@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 from astropy.io import fits
+from helper import running_stats
 import matplotlib.pyplot as plt
 import time
 import statistics
@@ -150,7 +151,53 @@ def median_fits(files):
 	stop = time.time() - start
 	return median, stop, memory
 
+
+# BINAPPROX
+
+def median_bins_fits(files, B):
+  mean, std = running_stats(files)
+  dim = mean.shape
+  left_bin = np.zeros(dim)
+  bins = np.zeros((dim[0], dim[1], B))
+  bin_width = 2*std/B
+  
+  for _file in files:
+    hdulist = fits.open(_file)
+    data = hdulist[0].data
+    for i in range(dim[0]):
+      for j in range(dim[1]):
+        value = data[i, j]
+        _mean = mean[i, j]
+        _std = std[i, j]
+    
+        if value < _mean - _std:
+          left_bin[i, j] += 1
+        elif value < _mean + _std:
+          _bin = int((value - (_mean-_std))/bin_width[i,j])
+          bins[i, j, _bin] += 1
+  
+  return mean, std, left_bin, bins
+
+def median_approx_fits(files, B):
+  mean, std, left_bin, bins = median_bins_fits(files, B)
+  dim = mean.shape
+  mid = (len(files)+1)/2
+  bin_width = 2*std/B
+  median = np.zeros(dim)
+  
+  for i in range(dim[0]):
+    for j in range(dim[1]):
+      count = left_bin[i, j]
+      for _bin, bincount in enumerate(bins[i, j]):
+        count += bincount
+        if count >= mid:
+          break
+      median[i, j] = mean[i, j] - std[i, j] + bin_width[i, j]*(_bin + 0.5)
+  return median
+
 if __name__ == '__main__':
-	mem_use_test()
+	# mem_use_test()
+	median = median_approx_fits(['test_data/image{}.fits'.format(str(i)) for i in range(11)], 4)
+	print(median[100, 100])
 
 

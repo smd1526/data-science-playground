@@ -28,6 +28,22 @@ ignore_bin // value < minval
 // Sum until total >= (N + 1)/2 (starting with ignore bin)
 // Return the midpoint of the bin that exceeded (N + 1)/2
 
-
 Downside to binapprox:
 Answer is only accurate to σ/B. Must keep B large enough that this isn't a problem.
+
+
+Equatorial coordinates are fixed relative to the celestial sphere, so the positions are independent of when or where the observations took place. They are defined relative to the celestial equator and the ecliptic. A point on the celestial sphere is given by two coordinates:
+Right ascension: the angle from the vernal equinox to the point, going east along the celestial equator,
+Declination: the angle from the celestial equator to the point, going north (negative values indicate going south).
+
+RA usually given in hours-minutes-seconds (HMS) notation.
+Full circle = 24 hours -> 1 hour in HMS = 15 degrees
+
+Declination usually given in degrees-minutes-seconds (DMS) notation
+
+Can calculate the angular distance between two objects on the celestial sphere:
+(α1, δ1) = RA and declination of object 1
+(α2, δ2) = RA and declination of object 2
+
+Haversine formula:
+http://latex.codecogs.com/gif.latex?d%20%3D%202arcsin%5Csqrt%7Bsin%5E2%5Cfrac%7B%7C%5Cdelta_1-%5Cdelta_2%7C%7D%7B2%7D%2Bcos%5Cdelta_1cos%5Cdelta_2sin%5E2%5Cfrac%7B%7C%5Calpha_1-%5Calpha_2%7C%7D%7B2%7D%7D

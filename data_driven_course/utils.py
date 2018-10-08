@@ -5,6 +5,8 @@ from helper import running_stats
 import matplotlib.pyplot as plt
 import time
 import statistics
+from astropy.coordinates import SkyCoord
+from astropy import units as u
 
 # ARRAYS
 def array_tests():
@@ -289,7 +291,309 @@ def test_crossmatch():
 	print(no_matches[:3])
 	print(len(no_matches))
 
+
+
+
+
+RA_INDEX = 0
+DC_INDEX = 1
+
+def angular_dist2(a1, d1, a2, d2):
+	x1 = np.sin(np.abs(d1-d2)/2)**2
+	x2 = np.cos(d1)*np.cos(d2)*(np.sin(abs(a1-a2)/2)**2)
+	return np.degrees(2*np.arcsin(np.sqrt(x1+x2)))
+
+def find_closest2(cat, ra, dc):
+	closest = (0, angular_dist2(ra, dc, cat[0][RA_INDEX], cat[0][DC_INDEX]))
+	for x in range(1, len(cat)):
+		dist = angular_dist2(ra, dc, cat[x][RA_INDEX], cat[x][DC_INDEX])
+		if dist < closest[1]:
+			closest = (x, dist)
+	return closest
+
+# Tracks time
+# converts bss_cat and super_cat to radians before distance calculations
+def crossmatch2(bss_cat, super_cat, max_dist):
+	start = time.perf_counter()
+
+	matches = []
+	no_matches = []
+
+	bss_cat = np.radians(bss_cat)
+	super_cat = np.radians(super_cat)
+
+	for i in range(0, len(bss_cat)):
+		bss_obj = bss_cat[i]
+		(closest, dist) = find_closest2(super_cat, bss_obj[RA_INDEX], bss_obj[DC_INDEX])
+		if dist > max_dist:
+			no_matches.append(i)
+		else:
+			matches.append((i, closest, dist))
+  
+	total_time = time.perf_counter() - start
+	return (matches, no_matches, total_time)
+
+
+def test_crossmatch2():
+	cat1 = np.array([[180, 30], [45, 10], [300, -45]])
+	cat2 = np.array([[180, 32], [55, 10], [302, -44]])
+	matches, no_matches, time_taken = crossmatch2(cat1, cat2, 5)
+	print('matches:', matches)
+	print('unmatched:', no_matches)
+	print('time taken:', time_taken)
+
+	def create_cat(n):
+		ras = np.random.uniform(0, 360, size=(n, 1))
+		decs = np.random.uniform(-90, 90, size=(n, 1))
+		return np.hstack((ras, decs))
+
+	np.random.seed(0)
+	cat1 = create_cat(10)
+	cat2 = create_cat(20)
+	matches, no_matches, time_taken = crossmatch2(cat1, cat2, 5)
+	print('matches:', matches)
+	print('unmatched:', no_matches)
+	print('time taken:', time_taken)
+
+
+
+# Optimization 1: Calculate distance over all super_cat objects at once
+# 	Uses numpy arrays which is faster (uses C optimizations)
+# 	Uses the min of the resulting distances array
+def angular_dist3(ra, dec, ra2s, dec2s):
+    x1 = np.sin(np.abs(dec-dec2s)/2)**2
+    x2 = np.cos(dec)*np.cos(dec2s)*(np.sin(abs(ra-ra2s)/2)**2)
+    return 2*np.arcsin(np.sqrt(x1+x2))
+
+def find_closest3(cat, ra, dec):
+    ra2s = cat[:,RA_INDEX]
+    dec2s = cat[:,DC_INDEX]
+    dists = angular_dist3(ra, dec, ra2s, dec2s)
+    dists = np.degrees(dists)
+    min_dist_id = np.argmin(dists)
+    return (min_dist_id, dists[min_dist_id])
+
+def crossmatch3(bss_cat, super_cat, max_dist):
+	start = time.perf_counter()
+
+	matches = []
+	no_matches = []
+
+	bss_cat = np.radians(bss_cat)
+	super_cat = np.radians(super_cat)
+
+	for i in range(0, len(bss_cat)):
+		bss_obj = bss_cat[i]
+		(closest, dist) = find_closest3(super_cat, bss_obj[RA_INDEX], bss_obj[DC_INDEX])
+		if dist > max_dist:
+			no_matches.append(i)
+		else:
+			matches.append((i, closest, dist))
+  
+	total_time = time.perf_counter() - start
+	return (matches, no_matches, total_time)
+
+
+def test_crossmatch3():
+	cat1 = np.array([[180, 30], [45, 10], [300, -45]])
+	cat2 = np.array([[180, 32], [55, 10], [302, -44]])
+	matches, no_matches, time_taken = crossmatch3(cat1, cat2, 5)
+	print('matches:', matches)
+	print('unmatched:', no_matches)
+	print('time taken:', time_taken)
+
+	def create_cat(n):
+		ras = np.random.uniform(0, 360, size=(n, 1))
+		decs = np.random.uniform(-90, 90, size=(n, 1))
+		return np.hstack((ras, decs))
+
+	np.random.seed(0)
+	cat1 = create_cat(10)
+	cat2 = create_cat(20)
+	matches, no_matches, time_taken = crossmatch3(cat1, cat2, 5)
+	print('matches:', matches)
+	print('unmatched:', no_matches)
+	print('time taken:', time_taken)
+
+
+
+
+# Optimization 2: Track declinations from second catalogue
+# 		When dec2 > dec1 + max_dist: stop searching for closest object
+def angular_dist4(a1, d1, a2, d2):
+  x1 = np.sin(np.abs(d1-d2)/2)**2
+  x2 = np.cos(d1)*np.cos(d2)*(np.sin(abs(a1-a2)/2)**2)
+  return 2*np.arcsin(np.sqrt(x1+x2))
+
+def find_closest4(cat, ra, dc, max_radius):
+  dec2s = cat[:,DC_INDEX]
+  dec2s_sort_order = np.argsort(dec2s)
+  dec2s_sorted = np.sort(dec2s)
+  closest = (dec2s_sort_order[0], angular_dist4(ra, dc, cat[dec2s_sort_order[0]][RA_INDEX], dec2s_sorted[0]))
+  for x in range(1, len(dec2s_sorted)):
+    dc2 = dec2s_sorted[x]
+    if dc2 > (dc+max_radius):
+        return closest
+
+    dist = angular_dist4(ra, dc, cat[dec2s_sort_order[x]][RA_INDEX], dc2)
+    if dist < closest[1]:
+      closest = (dec2s_sort_order[x], dist)
+  return closest
+
+def crossmatch4(bss_cat, super_cat, max_dist):
+  start = time.perf_counter()
+
+  matches = []
+  no_matches = []
+
+  max_dist = np.radians(max_dist)
+  bss_cat = np.radians(bss_cat)
+  super_cat = np.radians(super_cat)
+
+  for i in range(0, len(bss_cat)):
+    bss_obj = bss_cat[i]
+    (closest, dist) = find_closest4(super_cat, bss_obj[RA_INDEX], bss_obj[DC_INDEX], max_dist)
+    if dist > max_dist:
+      no_matches.append(i)
+    else:
+      matches.append((i, closest, np.degrees(dist)))
+  
+  total_time = time.perf_counter() - start
+  return (matches, no_matches, total_time)
+
+
+def test_crossmatch4():
+	cat1 = np.array([[180, 30], [45, 10], [300, -45]])
+	cat2 = np.array([[180, 32], [55, 10], [302, -44]])
+	matches, no_matches, time_taken = crossmatch4(cat1, cat2, 5)
+	print('matches:', matches)
+	print('unmatched:', no_matches)
+	print('time taken:', time_taken)
+
+	def create_cat(n):
+		ras = np.random.uniform(0, 360, size=(n, 1))
+		decs = np.random.uniform(-90, 90, size=(n, 1))
+		return np.hstack((ras, decs))
+
+	np.random.seed(0)
+	cat1 = create_cat(10)
+	cat2 = create_cat(20)
+	matches, no_matches, time_taken = crossmatch4(cat1, cat2, 5)
+	print('matches:', matches)
+	print('unmatched:', no_matches)
+	print('time taken:', time_taken)
+
+
+
+
+# Optimization #3: Only search for second catalogue objects with dec between [dec1-max_dist, dec1+max_dist]
+# 	Use searchsorted to binary search for start and end indices
+def angular_dist5(a1, d1, a2, d2):
+  x1 = np.sin(np.abs(d1-d2)/2)**2
+  x2 = np.cos(d1)*np.cos(d2)*(np.sin(abs(a1-a2)/2)**2)
+  return 2*np.arcsin(np.sqrt(x1+x2))
+
+def find_closest5(cat, ra, dc, max_radius):
+  dec2s = cat[:,DC_INDEX]
+  dec2s_sort_order = np.argsort(dec2s)
+  dec2s_sorted = np.sort(dec2s)
+  start = np.searchsorted(dec2s_sorted, dc-max_radius, side='left')
+  end = np.searchsorted(dec2s_sorted, dc+max_radius, side='right')
+  
+  closest = (dec2s_sort_order[start], angular_dist5(ra, dc, cat[dec2s_sort_order[start]][RA_INDEX], dec2s_sorted[start]))
+  for x in range(start+1, end):
+
+    dist = angular_dist5(ra, dc, cat[dec2s_sort_order[x]][RA_INDEX], cat[dec2s_sort_order[x]][DC_INDEX])
+    if dist < closest[1]:
+      closest = (dec2s_sort_order[x], dist)
+  return closest
+
+def crossmatch5(bss_cat, super_cat, max_dist):
+  start = time.perf_counter()
+
+  matches = []
+  no_matches = []
+
+  max_dist = np.radians(max_dist)
+  bss_cat = np.radians(bss_cat)
+  super_cat = np.radians(super_cat)
+
+  for i in range(0, len(bss_cat)):
+    bss_obj = bss_cat[i]
+    (closest, dist) = find_closest5(super_cat, bss_obj[RA_INDEX], bss_obj[DC_INDEX], max_dist)
+    if dist > max_dist:
+      no_matches.append(i)
+    else:
+      matches.append((i, closest, np.degrees(dist)))
+  
+  total_time = time.perf_counter() - start
+  return (matches, no_matches, total_time)
+
+
+def test_crossmatch5():
+	cat1 = np.array([[180, 30], [45, 10], [300, -45]])
+	cat2 = np.array([[180, 32], [55, 10], [302, -44]])
+	matches, no_matches, time_taken = crossmatch5(cat1, cat2, 5)
+	print('matches:', matches)
+	print('unmatched:', no_matches)
+	print('time taken:', time_taken)
+
+	def create_cat(n):
+		ras = np.random.uniform(0, 360, size=(n, 1))
+		decs = np.random.uniform(-90, 90, size=(n, 1))
+		return np.hstack((ras, decs))
+
+	np.random.seed(0)
+	cat1 = create_cat(10)
+	cat2 = create_cat(20)
+	matches, no_matches, time_taken = crossmatch5(cat1, cat2, 5)
+	print('matches:', matches)
+	print('unmatched:', no_matches)
+	print('time taken:', time_taken)
+
+
+# Use Astropy's implementation of k-d trees to find matches
+# Need to manually filter those matches outside the max distance
+def crossmatch6(bss_cat, super_cat, max_dist):
+  start = time.perf_counter()
+
+  sky_cat1 = SkyCoord(bss_cat*u.degree, frame='icrs')
+  sky_cat2 = SkyCoord(super_cat*u.degree, frame='icrs')
+  
+  # closest_id and closest_dists give the matching object's row index in sky_cat2 and the distance to it  
+  closest_ids, closest_dists, closest_dists3d = sky_cat1.match_to_catalog_sky(sky_cat2)
+  
+  no_matches = []
+  matches = []
+  for i, dist in enumerate(closest_dists):
+    if dist.value > max_dist:
+        no_matches.append(i)
+    else:
+        matches.append((i, closest_ids[i], dist.value))
+
+  total_time = time.perf_counter() - start
+  return (matches, no_matches, total_time)
+
+def test_crossmatch6():
+	cat1 = np.array([[180, 30], [45, 10], [300, -45]])
+	cat2 = np.array([[180, 32], [55, 10], [302, -44]])
+	matches, no_matches, time_taken = crossmatch6(cat1, cat2, 5)
+	print('matches:', matches)
+	print('unmatched:', no_matches)
+	print('time taken:', time_taken)
+
+	def create_cat(n):
+		ras = np.random.uniform(0, 360, size=(n, 1))
+		decs = np.random.uniform(-90, 90, size=(n, 1))
+		return np.hstack((ras, decs))
+
+	np.random.seed(0)
+	cat1 = create_cat(10)
+	cat2 = create_cat(20)
+	matches, no_matches, time_taken = crossmatch6(cat1, cat2, 5)
+	print('matches:', matches)
+	print('unmatched:', no_matches)
+	print('time taken:', time_taken)
+
 if __name__ == '__main__':
-	test_crossmatch()
-
-
+	test_crossmatch6()

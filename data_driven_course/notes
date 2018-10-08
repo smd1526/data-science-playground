@@ -47,3 +47,25 @@ Can calculate the angular distance between two objects on the celestial sphere:
 
 Haversine formula:
 http://latex.codecogs.com/gif.latex?d%20%3D%202arcsin%5Csqrt%7Bsin%5E2%5Cfrac%7B%7C%5Cdelta_1-%5Cdelta_2%7C%7D%7B2%7D%2Bcos%5Cdelta_1cos%5Cdelta_2sin%5E2%5Cfrac%7B%7C%5Calpha_1-%5Calpha_2%7C%7D%7B2%7D%7D
+
+
+
+Crossmatching using k-d trees (https://en.wikipedia.org/wiki/K-d_tree)
+Crossmatching - comparing objects in one catalogue to objects in another to find the closest match.
+
+Astropy constructs a k-d tree out of the second catalogue, letting it search through for a match for each object in the first catalogue efficiently. Constructing a k-d tree is similar to binary search. The k-dimensional space is divided into two parts recursively until each division contains only a single object. Creating a k-d tree from an astronomy catalogue works like this:
+1. Find the object with the median right ascension, split the catalogue into objects left and right partitions of this.
+2. Find the objects with the median declination in each partition, split the partitions into smaller partitions of objects down and up of these.
+3. Find the objects with median right ascension in each of the partitions, split the partitions into smaller partitions of objects left and right of these.
+4. Repeat 2-3 until each partition only has one object in it.
+
+This creates a binary tree where each object used to split a partition (a node) links to the two objects that then split the partitions it has created (its children).
+
+Once you've made a k-d tree out of a catalogue, finding a match to an object then works like this:
+1. Calculate the distance from the object to highest level node (the root node), then go to the child node closest (in righ ascension) to the object.
+2. Calculate the distance from the object to this child, then go to the child node closest (in declination) to the object.
+3. Calculate the distance from the object to this child, then go to the child node closest (in right ascension) to the object.
+4. Repeat 2-3 until you reach a child node with no further children (a leaf node).
+5. Find the shortest distance of all distances calculated, this corresponds to the closest object.
+
+Since each node branches into two children, a catalogue of N objects will have, on average, log2(N) nodes from the root to any leaf. So while it seems like a lot of effort to create a k-d tree, doing so lets you, for example, search the entire SuperCOSMOS catalogue of 250 million objects using only 28 distance calculations.

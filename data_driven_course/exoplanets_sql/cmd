@@ -1,0 +1,1 @@
+$ rm test.db && sqlite3 test.db < init.sql && sqlite3 test.db < query.sql

@@ -1,0 +1,39 @@
+Use BETWEEN for range queries:
+SELECT radius FROM Star
+WHERE radius BETWEEN 1 AND 2;
+
+Use COUNT to only return the number of rows in the table requested.
+Example:
+SELECT COUNT(*) FROM Planet;
+
+Other aggregate functions:
+MIN, MAX, SUM, AVG, STDDEV
+
+Example:
+SELECT MIN(radius), MAX(radius), AVG(radius) FROM Planet;
+
+Use ORDER BY for sort order. Example:
+SELECT koi_name, radius FROM Planet
+ORDER BY radius DESC
+LIMIT 5;
+
+
+GROUP BY arranges identical data in groups on which we can perform aggregate functions.
+Example:
+SELECT radius, COUNT(koi_name)
+FROM Planet
+GROUP BY radius;
+-> returns a table which is grouped by the planet radii and contains the radii and the number of koi_names belonging to each radius.
+
+In order to use aggregate functions in our conditions, we require the HAVING statement instead of WHERE, which gets called after the GROUP BY clause. Example:
+SELECT radius, COUNT(koi_name)
+FROM Planet
+GROUP BY radius
+HAVING COUNT(koi_name) > 1;
+
+Example:
+SELECT kepler_id, COUNT(koi_name)
+FROM Planet 
+GROUP BY kepler_id
+HAVING COUNT(koi_name) > 1
+ORDER BY COUNT(koi_name) desc;

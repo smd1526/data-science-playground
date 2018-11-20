@@ -37,3 +37,53 @@ FROM Planet
 GROUP BY kepler_id
 HAVING COUNT(koi_name) > 1
 ORDER BY COUNT(koi_name) desc;
+
+There are several ways to join data from multiple tables in SQL, the simplest one is called an equi-join. An equi-join usually tests for equality on attributes shared across tables. The condition in the WHERE clause is also called a join condition, it specifies how the data is to be joined. By taking this condition out, we've transformed our equi-join into a cross- or cartesian-join.
+
+JOIN ... USING:
+Specifying a field of attribute to test for equality
+
+JOIN ... ON:
+Specifying a condition
+
+Inner joins: data is combined only when the specified condition is true.
+
+Outer joins: table rows can be combined even if there is no match found to fulfill the join condition. We distinguish between three types of outer joins:
+
+
+<table1> LEFT OUTER JOIN <table2>
+Here all rows from <table1> are kept and missing matches from <table2> are replaced with NULL values.
+
+<table1> RIGHT OUTER JOIN <table2>
+All rows from <table2> are kept and missing matches from <table1> are replaced with NULL values.
+
+<table1> FULL OUTER JOIN <table2>
+All rows from both tables are kept.
+
+
+We distinguish between two types of subqueries:
+Co-related: the subquery is executed for each element of the outer query.
+Non-co-related: the subquery is executed only once.
+
+Examples:
+
+SELECT s.kepler_id
+FROM Star s
+WHERE EXISTS (
+  SELECT * FROM Planet p
+  WHERE s.kepler_id = p.kepler_id
+    AND p.radius < 1
+);
+
+This is a co-related subquery. We select each row in Star where the corresponding kepler_id in Planet is a planet with radius smaller than 1. We may have to query the Planet table for each row in Star and check if the result is not empty using EXISTS.
+
+Non-co-related query:
+
+SELECT s.kepler_id
+FROM Star s
+WHERE s.kepler_id IN (
+  SELECT p.kepler_id FROM Planet p
+  WHERE p.radius < 1
+);
+
+Here we generate a table with the kepler_ids of all planets with a radius smaller than one, and then we check for each star if its kepler_id is contained in the returned Planet table. We query the Planet table only once.

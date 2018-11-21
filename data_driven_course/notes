@@ -69,3 +69,14 @@ Once you've made a k-d tree out of a catalogue, finding a match to an object the
 5. Find the shortest distance of all distances calculated, this corresponds to the closest object.
 
 Since each node branches into two children, a catalogue of N objects will have, on average, log2(N) nodes from the root to any leaf. So while it seems like a lot of effort to create a k-d tree, doing so lets you, for example, search the entire SuperCOSMOS catalogue of 250 million objects using only 28 distance calculations.
+
+
+data = np.loadtxt(csv, delimiter=',', usecols=(0,2))
+return data[data[:, 1]>1, :]
+Explanation:
+An operation like array > value returns an array with boolean values which evaluate to True for all indices whose element fulfill the condition. Then, if we pass this boolean array to a second array, the second array gets filtered and only those rows which are True in the first array remain.
+Example:
+import numpy as np
+a = np.array([2, 1, 3]) > 1
+b = np.array([3, 4, 2])
+print(b[a])

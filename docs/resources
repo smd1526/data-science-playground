@@ -4,7 +4,17 @@ Courses:
 Books:
 + Python Data Science Handbook: https://jakevdp.github.io/PythonDataScienceHandbook/
 
+Tutorials:
++ Photometric Redshifts of Galaxies (scikit-learn): http://ogrisel.github.io/scikit-learn.org/sklearn-tutorial/tutorial/astronomy/regression.html
++ scikit-learn User Guide: http://ogrisel.github.io/scikit-learn.org/sklearn-tutorial/user_guide.html
+	- In depth tutorials
+
 Data Sets:
 + Bright Source Sample of AT20G Survey (Radio Survey): http://cdsarc.u-strasbg.fr/viz-bin/Cat?J/MNRAS/384/775
 + SuperCOSMOS All-sky Galaxy catalogue (Optical Survey): http://ssa.roe.ac.uk/allSky
 + NASA's exoplanet archive: https://exoplanetarchive.ipac.caltech.edu/
++ Sloan Digital Sky Survey: https://www.sdss.org/
+
+Software:
++ scikit-learn
++ pandas

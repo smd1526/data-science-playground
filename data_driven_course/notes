@@ -119,3 +119,33 @@ Part of the reason for this over-fitting is that the algorithm works by trying t
 While hold-out validation is better than no validation, the measured accuracy will vary depending on how we split the data into testing and training subsets. The med_diff that we get from one randomly sampled training set will vary to that of a different random training set of the same size.
 
 In order to be more certain of our model accuracy we should use k-fold cross validation. k-fold validation works in a similar way to hold-out except that we split the data into k subsets. We train and test the model k times, recording the accuracy each time. Each time we use a different combination of k-1 subsets to train the model and the final kth subset to test. We take the average of the k accuracy measurements to be the overall accuracy of the model.
+
+
+In classification, the predictions are from a fixed set of classes, whereas in regression, the prediction typically corresponds to a continuum of possible values. In regression, we measure accuracy by looking at the size of the differences between the predicted values and the actual values. In contrast, in classification problems a prediction can either be correct or incorrect.
+
+Features to use for galaxy classification: color index, adaptive moments, eccentricities, and concentrations. (http://skyserver.sdss.org/dr7/en/help/docs/algorithm.asp)
+
+Color indices: (u-g, g-r, r-i, i-z); Studies of galaxy evolution tell us that spiral galaxies have younger star populations and therefore are 'bluer' (brighter at lower wavelengths). Elliptical galaxies have an older star population and are brighter at higher wavelengths ('redder').
+
+Eccentricity approximates the shape of the galaxy by fitting an ellipse to its profile. Eccentricity is the ratio of the two axis (semi-major and semi-minor).
+
+Adaptive moments describe the shape of a galaxy. They are used in image analysis to detect similar objects at different sizes and orientations.
+
+Concentration is similar to the luminosity profile of the galaxy, which measures what proportion of a galaxy's total light is emitted within what radius. A simplified way to represent this is to take the ratio of the radii containing 50% and 90% of the Petrosian flux. The Petrosian method allows us to compare the radial profiles of galaxies at different distances. (http://spiff.rit.edu/classes/phys443/lectures/gal_1/petro/petro.html)
+
+conc = petro_R50 / petro_R90
+
+
+The accuracy of classification problems is a lot simpler to calculate than for regression problems.
+
+accuracy = # correct prediction / # predictions
+
+accuracy = (sum(i=1, n) predicted_i = actual_i) / n
+
+The accuracy is often called the model score.
+
+In addition to an overall accuracy score, we'd also like to know where our model is going wrong. For example, were the incorrectly classified mergers mis-classified as spirals or ellipticals? To answer this type of question we use a confusion matrix. The x-axis represents the predicted classes and the y axis represents the correct classes. The value in each cell is the number of examples with those predicted and actual classes. Correctly classified objects are along the diagonal of the matrix.
+
+A random forest is a collection of decision trees that have each been independently trained using different subsets of the training data and/or different combinations of features in those subsets. When making a prediction, every tree in the forest gives its own prediction and the most common classification is taken as the overall forest prediction (in regression, the mean prediction is used).
+
+Random forests help to mitigate overfitting in decision trees. Training data is spread across decision trees. The subsets are created by taking random samples with replacement. This means that a given data point can be used in several subsets. Individual trees are trained with different subsets of features.

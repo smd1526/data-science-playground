@@ -36,19 +36,19 @@ def file_data_test2():
 	print(np.median(data).round(1))
 
 def mean_datasets(files):
-  data = None
+	data = None
   
-  if files is None or len(files) == 0:
-    return None
+	if files is None or len(files) == 0:
+		return None
   
-  for _file in files:
-    if data is None:
-      data = np.loadtxt(_file, delimiter=',')
-    else:
-      data += np.loadtxt(_file, delimiter=',')
+	for _file in files:
+		if data is None:
+			data = np.loadtxt(_file, delimiter=',')
+		else:
+			data += np.loadtxt(_file, delimiter=',')
 
-  mean = data/len(files)
-  return np.round(mean, 1)
+	mean = data/len(files)
+	return np.round(mean, 1)
 
 def mean_datasets_test():
 	print(mean_datasets(['test_data/data1.csv', 'test_data/data2.csv', 'test_data/data3.csv']))
@@ -82,32 +82,32 @@ def fits_test():
 	plt.show()
 
 def mean_fits(files):
-  if files is None or len(files) == 0:
-    return None
-  
-  data = None
-  for _file in files:
-    hdulist = fits.open(_file)
-    if data is None:
-      data = hdulist[0].data
-    else:
-      data += hdulist[0].data
-    hdulist.close()
-  return data/len(files)
+	if files is None or len(files) == 0:
+		return None
+
+	data = None
+	for _file in files:
+		hdulist = fits.open(_file)
+		if data is None:
+			data = hdulist[0].data
+		else:
+			data += hdulist[0].data
+		hdulist.close()
+	return data/len(files)
 
 
 # TIMING
 
 def time_stat(func, size, ntrials):
-  # the time to generate the random array should not be included
-  data = np.random.rand(size)
-  # modify this function to time func with ntrials times using a new random array each time
-  start = time.perf_counter()
-  for _ in range(ntrials):
-    res = func(data)
-  end = time.perf_counter() - start
-  # return the average run time
-  return end / ntrials
+	# the time to generate the random array should not be included
+	data = np.random.rand(size)
+	# modify this function to time func with ntrials times using a new random array each time
+	start = time.perf_counter()
+	for _ in range(ntrials):
+		res = func(data)
+	end = time.perf_counter() - start
+	# return the average run time
+	return end / ntrials
 
 def time_test():
 	print('{:.6f}s for statistics.mean'.format(time_stat(statistics.mean, 10**5, 10)))
@@ -157,58 +157,54 @@ def median_fits(files):
 # BINAPPROX
 
 def median_bins_fits(files, B):
-  mean, std = running_stats(files)
-  dim = mean.shape
-  left_bin = np.zeros(dim)
-  bins = np.zeros((dim[0], dim[1], B))
-  bin_width = 2*std/B
-  
-  for _file in files:
-    hdulist = fits.open(_file)
-    data = hdulist[0].data
-    for i in range(dim[0]):
-      for j in range(dim[1]):
-        value = data[i, j]
-        _mean = mean[i, j]
-        _std = std[i, j]
-    
-        if value < _mean - _std:
-          left_bin[i, j] += 1
-        elif value < _mean + _std:
-          _bin = int((value - (_mean-_std))/bin_width[i,j])
-          bins[i, j, _bin] += 1
-  
-  return mean, std, left_bin, bins
+	mean, std = running_stats(files)
+	dim = mean.shape
+	left_bin = np.zeros(dim)
+	bins = np.zeros((dim[0], dim[1], B))
+	bin_width = 2*std/B
+
+	for _file in files:
+		hdulist = fits.open(_file)
+		data = hdulist[0].data
+		for i in range(dim[0]):
+			for j in range(dim[1]):
+				value = data[i, j]
+				_mean = mean[i, j]
+				_std = std[i, j]
+
+				if value < _mean - _std:
+					left_bin[i, j] += 1
+				elif value < _mean + _std:
+					_bin = int((value - (_mean-_std))/bin_width[i,j])
+					bins[i, j, _bin] += 1
+
+	return mean, std, left_bin, bins
 
 # median = median_approx_fits(['test_data/image{}.fits'.format(str(i)) for i in range(11)], 4)
 def median_approx_fits(files, B):
-  mean, std, left_bin, bins = median_bins_fits(files, B)
-  dim = mean.shape
-  mid = (len(files)+1)/2
-  bin_width = 2*std/B
-  median = np.zeros(dim)
-  
-  for i in range(dim[0]):
-    for j in range(dim[1]):
-      count = left_bin[i, j]
-      for _bin, bincount in enumerate(bins[i, j]):
-        count += bincount
-        if count >= mid:
-          break
-      median[i, j] = mean[i, j] - std[i, j] + bin_width[i, j]*(_bin + 0.5)
-  return median
+	mean, std, left_bin, bins = median_bins_fits(files, B)
+	dim = mean.shape
+	mid = (len(files)+1)/2
+	bin_width = 2*std/B
+	median = np.zeros(dim)
 
-
-
-
+	for i in range(dim[0]):
+		for j in range(dim[1]):
+			count = left_bin[i, j]
+			for _bin, bincount in enumerate(bins[i, j]):
+				count += bincount
+				if count >= mid:
+					break
+			median[i, j] = mean[i, j] - std[i, j] + bin_width[i, j]*(_bin + 0.5)
+	return median
 
 def hms2dec(hours, mins, secs):
-  return (15*(hours + mins/60 + secs/(60*60)))
+	return (15*(hours + mins/60 + secs/(60*60)))
 
 def dms2dec(deg, amins, asecs):
-  if deg < 0:
-    return -1*((-1*deg) + amins/60 + asecs/(60*60))
-  return (deg + amins/60 + asecs/(60*60))
+	if deg < 0:
+		return -1*((-1*deg) + amins/60 + asecs/(60*60))
+	return (deg + amins/60 + asecs/(60*60))
 
 # [right ascension in HMS, declination in HMS]
 # [  0.     4.    35.65 -47.    36.    19.1 ]

@@ -1,6 +1,13 @@
 Courses:
 + Data Driven Astronomy Coursera course: https://www.coursera.org/learn/data-driven-astronomy/
 
+Python packages:
++ scikit-learn
++ numpy
++ scipy
++ matplotlib
++ pandas
+
 Books:
 + Python Data Science Handbook: https://jakevdp.github.io/PythonDataScienceHandbook/
 

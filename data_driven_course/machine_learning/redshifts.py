@@ -52,10 +52,7 @@ def validate_model(model, features, targets):
 	train_targets = targets[:split]
 	test_targets = targets[split:]
 
-	# train the model
 	model.fit(train_features, train_targets)
-
-	# get the predicted redshifts
 	predictions = model.predict(test_features)
 
 	# use median_diff to calculate accuracy
@@ -74,24 +71,19 @@ def test3():
 
 	cmap = plt.get_cmap('YlOrRd') # Get a contour map
 
-	# Define our colour indexes u-g and r-i
 	u_g = data['u'] - data['g']
 	r_i = data['r'] - data['i']
 
-	# Make a redshift array
 	redshift = data['redshift']
 
-	# Create the plot with plt.scatter and plt.colorbar
 	plot = plt.scatter(u_g, r_i, s=0.5, lw=0, c=redshift, cmap=cmap)
 	cb = plt.colorbar(plot)
 	cb.set_label('Redshift')
 
-	# Define your axis labels and plot title
 	plt.xlabel('Colour index u-g')
 	plt.ylabel('Colour index r-i')
 	plt.title('Redshift (colour) u-g versus r-i')
 
-	# Set any axis limits
 	plt.xlim(-0.5, 2.5)
 	plt.ylim(-0.5, 1)
 
@@ -104,27 +96,20 @@ def accuracy_by_treedepth(features, targets, depths):
 	train_features, test_features = features[:split], features[split:]
 	train_targets, test_targets = targets[:split], targets[split:]
 
-	# initialize arrays to store the accuracies
 	train_diffs = []
 	test_diffs = []
 
-	# loop through depths
 	for depth in depths:
-		# initialize model with the maximum depth
-		dtr = DecisionTreeRegressor(max_depth=depth)
 
-		# train the model using the training set
+		dtr = DecisionTreeRegressor(max_depth=depth)
 		dtr.fit(train_features, train_targets)
 
-		# get the predictions for the training set and calculate their median_diff
 		predictions = dtr.predict(train_features)
 		train_diffs.append(median_diff(train_targets, predictions))
 
-		# get the predictions for the testing set and calculate their median_diff
 		predictions = dtr.predict(test_features)
 		test_diffs.append(median_diff(test_targets, predictions))
 
-	# return the accuracies for the training and testing sets
 	return train_diffs, test_diffs
 
 def test4():
@@ -146,43 +131,31 @@ def test4():
 def cross_validate_model(model, features, targets, k):
 	kf = KFold(n_splits=k, shuffle=True)
 
-	# initialise a list to collect median_diffs for each iteration of the loop below
 	results = []
 
 	for train_indices, test_indices in kf.split(features):
 		train_features, test_features = features[train_indices], features[test_indices]
 		train_targets, test_targets = targets[train_indices], targets[test_indices]
 
-		# fit the model for the current set
 		model.fit(train_features, train_targets)
-
-		# predict using the model
 		predictions = model.predict(test_features)
-
-		# calculate the median_diff from predicted values and append to results array
 		results.append(median_diff(predictions, test_targets))
 
-	# return the list with your median difference values
 	return results
 
 def test5():
 	data = np.load('./sdss_galaxy_colors.npy')
 	features, targets = get_features_targets(data)
 
-	# initialize model with a maximum depth of 19
 	dtr = DecisionTreeRegressor(max_depth=19)
-
-	# call your cross validation function
 	diffs = cross_validate_model(dtr, features, targets, 10)
 
-	# Print the values
 	print('Differences: {}'.format(', '.join(['{:.3f}'.format(val) for val in diffs])))
 	print('Mean difference: {:.3f}'.format(np.mean(diffs)))
 
 def cross_validate_predictions(model, features, targets, k):
 	kf = KFold(n_splits=k, shuffle=True)
 
-	# declare an array for predicted redshifts from each iteration
 	all_predictions = np.zeros_like(targets)
 
 	for train_indices, test_indices in kf.split(features):
@@ -190,26 +163,17 @@ def cross_validate_predictions(model, features, targets, k):
 		train_features, test_features = features[train_indices], features[test_indices]
 		train_targets, test_targets = targets[train_indices], targets[test_indices]
 
-		# fit the model for the current set
 		model.fit(train_features, train_targets)
-
-		# predict using the model
 		predictions = model.predict(test_features)
-		    
-		# put the predicted values in the all_predictions array defined above
 		all_predictions[test_indices] = predictions
 
-	# return the predictions
 	return all_predictions
 
 def test6():
 	data = np.load('./sdss_galaxy_colors.npy')
 	features, targets = get_features_targets(data)
 
-	# initialize model
 	dtr = DecisionTreeRegressor(max_depth=19)
-
-	# call your cross validation function
 	predictions = cross_validate_predictions(dtr, features, targets, 10)
 
 	# calculate and print the rmsd as a sanity check
@@ -239,8 +203,6 @@ def test7():
 	data = np.load('./sdss_galaxy_colors.npy')
 	galaxies, qsos= split_galaxies_qsos(data)
 
-	# Here we cross validate the model and get the cross-validated median difference
-	# The cross_validated_med_diff function is in "written_functions"
 	galaxy_med_diff = cross_validate_median_diff(galaxies)
 	qso_med_diff = cross_validate_median_diff(qsos)
 
